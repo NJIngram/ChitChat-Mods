@@ -21,7 +21,7 @@ class SocketClient(tk.Tk):
         super().__init__()
         self.title("Chit Chat")
         self.configure(bg="#330000")
-        self.geometry("325x411")
+        self.geometry("500x411")
         self.resizable(True, True)
 
         self.socket = None
@@ -32,15 +32,41 @@ class SocketClient(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self):
+        content = tk.Frame(self, bg="#330000")
+        content.pack(fill=tk.BOTH, expand=True)
+
         self.text_area = scrolledtext.ScrolledText(
-            self,
+            content,
             state="disabled",
             bg="#000000",
             fg="#32CD32",
             font=("Monospace", 13, "bold"),
             wrap=tk.WORD,
         )
-        self.text_area.pack(fill=tk.BOTH, expand=True)
+        self.text_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        sidebar = tk.Frame(content, bg="#1a0000", width=130)
+        sidebar.pack(side=tk.RIGHT, fill=tk.Y)
+        sidebar.pack_propagate(False)
+
+        tk.Label(
+            sidebar,
+            text="Online",
+            bg="#1a0000",
+            fg="#32CD32",
+            font=("Tahoma", 10, "bold"),
+        ).pack(pady=(4, 2))
+
+        self.user_listbox = tk.Listbox(
+            sidebar,
+            bg="#000000",
+            fg="#32CD32",
+            font=("Tahoma", 10),
+            selectbackground="#330000",
+            bd=0,
+            highlightthickness=0,
+        )
+        self.user_listbox.pack(fill=tk.BOTH, expand=True, padx=2, pady=(0, 4))
 
         self.input_field = tk.Entry(
             self,
@@ -84,9 +110,20 @@ class SocketClient(tk.Tk):
     def _receive_loop(self):
         try:
             for data in self.reader:
-                self._append_text(data.rstrip("\n") + "\n")
+                line = data.rstrip("\n")
+                if line.startswith("__USERS__:"):
+                    payload = line[len("__USERS__:"):]
+                    users = [u for u in payload.split(",") if u]
+                    self.after(0, self._update_user_list, users)
+                else:
+                    self._append_text(line + "\n")
         except Exception as e:
             print(f"Error receiving messages from server: {e}")
+
+    def _update_user_list(self, users):
+        self.user_listbox.delete(0, tk.END)
+        for user in users:
+            self.user_listbox.insert(tk.END, user)
 
     def _append_text(self, text):
         self.text_area.configure(state="normal")

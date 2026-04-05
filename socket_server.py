@@ -41,6 +41,7 @@ class ServerThread(threading.Thread):
             self.name_label = self.reader.readline().strip()
             logger.info("JOIN  [%s] from %s", self.name_label, self.client_socket.getpeername())
             self.server.broadcast(f"**[{self.name_label}] Entered**")
+            self.server.broadcast_user_list()
 
             for data in self.reader:
                 data = data.strip()
@@ -51,6 +52,7 @@ class ServerThread(threading.Thread):
         finally:
             self.server.remove_thread(self)
             self.server.broadcast(f"**[{self.name_label}] Left**")
+            self.server.broadcast_user_list()
             try:
                 addr = self.client_socket.getpeername()
                 print(f"{addr} - [{self.name_label}] Exit")
@@ -80,6 +82,14 @@ class SocketServer:
     def remove_thread(self, thread):
         with self.lock:
             self.clients.remove(thread)
+
+    def get_user_list(self):
+        with self.lock:
+            return [t.name_label for t in self.clients if t.name_label]
+
+    def broadcast_user_list(self):
+        names = ",".join(self.get_user_list())
+        self.broadcast(f"__USERS__:{names}")
 
     def broadcast(self, message):
         print(message)

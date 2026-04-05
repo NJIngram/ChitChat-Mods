@@ -1,5 +1,26 @@
+"""ChitChat Server
+
+Usage:
+    python socket_server.py
+
+Starts a TCP chat server on 127.0.0.1:1234. Run this before starting any
+client. Multiple clients can connect simultaneously; every message sent by
+one client is broadcast to all connected clients.
+
+All connections and messages are logged to chitchat.log in the working
+directory.
+"""
+import logging
 import socket
 import threading
+
+logging.basicConfig(
+    filename="chitchat.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 class ServerThread(threading.Thread):
@@ -18,20 +39,25 @@ class ServerThread(threading.Thread):
     def run(self):
         try:
             self.name_label = self.reader.readline().strip()
+            logger.info("JOIN  [%s] from %s", self.name_label, self.client_socket.getpeername())
             self.server.broadcast(f"**[{self.name_label}] Entered**")
 
             for data in self.reader:
                 data = data.strip()
+                logger.info("MSG   [%s] %s", self.name_label, data)
                 self.server.broadcast(f"[{self.name_label}] {data}")
         except Exception as e:
-            print(f"Error handling client communication: {e} ---->")
+            print(f"Error handling client communication: {e} ---->")  
         finally:
             self.server.remove_thread(self)
             self.server.broadcast(f"**[{self.name_label}] Left**")
             try:
-                print(f"{self.client_socket.getpeername()} - [{self.name_label}] Exit")
+                addr = self.client_socket.getpeername()
+                print(f"{addr} - [{self.name_label}] Exit")
+                logger.info("LEAVE [%s] from %s", self.name_label, addr)
             except OSError:
                 print(f"[{self.name_label}] Exit")
+                logger.info("LEAVE [%s]", self.name_label)
             try:
                 self.reader.close()
                 self.writer.close()
@@ -74,6 +100,7 @@ class SocketServer:
             while True:
                 client_socket, addr = server_socket.accept()
                 print(f"{addr} connect")
+                logger.info("CONNECT %s", addr)
 
                 thread = ServerThread(self, client_socket)
                 self.add_thread(thread)

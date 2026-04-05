@@ -1,3 +1,15 @@
+"""ChitChat Client
+
+Usage:
+    python socket_client.py
+
+When launched, you will be prompted for:
+  - Server IP address  (use 127.0.0.1 for localhost)
+  - A nickname to display in the chat room
+
+Type a message in the text field at the bottom and press Enter to send.
+Close the window to disconnect from the server.
+"""
 import socket
 import threading
 import tkinter as tk

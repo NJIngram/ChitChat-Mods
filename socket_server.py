@@ -45,8 +45,12 @@ class ServerThread(threading.Thread):
 
             for data in self.reader:
                 data = data.strip()
-                logger.info("MSG   [%s] %s", self.name_label, data)
-                self.server.broadcast(f"[{self.name_label}] {data}")
+                if data.startswith("__IMG__:"):
+                    logger.info("IMG   [%s]", self.name_label)
+                    self.server.broadcast(f"__IMG__:{self.name_label}:{data[len('__IMG__:'):]}")
+                else:
+                    logger.info("MSG   [%s] %s", self.name_label, data)
+                    self.server.broadcast(f"[{self.name_label}] {data}")
         except Exception as e:
             print(f"Error handling client communication: {e} ---->")  
         finally:
